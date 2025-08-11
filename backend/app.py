@@ -10,8 +10,8 @@ app = Flask(__name__, template_folder='../frontend/templates', static_folder='..
 
 # Get the API key from environment variables
 API_KEY = os.getenv('OPENWEATHER_API_KEY')
-BASE_URL = "[http://api.openweathermap.org/data/2.5/weather](http://api.openweathermap.org/data/2.5/weather)"
-FORECAST_URL = "[http://api.openweathermap.org/data/2.5/forecast](http://api.openweathermap.org/data/2.5/forecast)"
+BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
+FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast"
 
 @app.route('/')
 def index():
@@ -28,17 +28,22 @@ def get_weather():
     if not city:
         return jsonify({"error": "City not provided"}), 400
 
+    # Check if the API key is present
+    if not API_KEY:
+        return jsonify({"error": "Weather API key not configured on the server."}), 500
+
     # Parameters for the API request
     params = {
         'q': city,
         'appid': API_KEY,
-        'units': 'metric'  # Use metric units (Celsius)
+        'units': 'metric'
     }
 
     try:
         # Fetch current weather data
         response = requests.get(BASE_URL, params=params)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        # This will raise an exception for HTTP error codes (4xx or 5xx)
+        response.raise_for_status()
         current_weather = response.json()
 
         # Fetch 5-day forecast data
@@ -54,13 +59,23 @@ def get_weather():
 
         return jsonify(weather_data)
 
-    except requests.exceptions.RequestException as e:
-        # For city not found, OpenWeatherMap returns a 404
-        if e.response and e.response.status_code == 404:
-             return jsonify({"error": "City not found. Please check the spelling."}), 404
-        return jsonify({"error": "Could not connect to weather service."}), 500
+    except requests.exceptions.HTTPError as err:
+        # This block now handles specific HTTP errors from the API
+        if err.response.status_code == 401:
+            return jsonify({"error": "Invalid API Key. Please check your .env file."}), 401
+        elif err.response.status_code == 404:
+            return jsonify({"error": f"Weather data not found for '{city}'. Please check the spelling."}), 404
+        else:
+            return jsonify({"error": f"An HTTP error occurred: {err}"}), err.response.status_code
+
+    except requests.exceptions.RequestException as err:
+        # This handles network-related errors (e.g., DNS failure, connection refused)
+        return jsonify({"error": f"Could not connect to weather service: {err}"}), 503
+
     except Exception as e:
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        # A catch-all for any other unexpected errors
+        return jsonify({"error": f"An unexpected server error occurred: {e}"}), 500
+
 
 if __name__ == '__main__':
     # Runs the Flask application
