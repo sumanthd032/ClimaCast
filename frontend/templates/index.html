@@ -1,3 +1,4 @@
+<!-- frontend/templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,9 +67,10 @@
             </div>
 
             <div class="grid md:grid-cols-2 gap-8">
-                 <div class="chart-container bg-gray-50 p-6 rounded-xl shadow-md">
+                 <!-- The 'h-80' class gives the container a fixed height, fixing the chart -->
+                 <div class="chart-container relative h-80 bg-gray-50 p-6 rounded-xl shadow-md">
                     <h3 class="text-2xl font-bold text-blue-500 mb-4">Temperature Trend</h3>
-                    <canvas id="temp-chart" class="h-64"></canvas>
+                    <canvas id="temp-chart"></canvas>
                 </div>
                 <div id="map-container" class="bg-gray-50 p-6 rounded-xl shadow-md">
                      <h3 class="text-2xl font-bold text-blue-500 mb-4">Location</h3>
