@@ -13,7 +13,7 @@ ClimaCast is a modern, responsive weather dashboard application built with Flask
 - **Temperature Trend Chart**: A line chart displaying the temperature forecast for the next 24 hours.
 - **Atmosphere Details**: Includes local sunrise/sunset times and the current Air Quality Index (AQI).
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: Python, Flask
 - **Frontend**: HTML, JavaScript, Tailwind CSS
@@ -25,7 +25,7 @@ ClimaCast is a modern, responsive weather dashboard application built with Flask
   - `Chart.js` (for data visualization)
   - `Leaflet.js` (for the interactive map)
 
-## 🚀 Setup and Installation
+## Setup and Installation
 
 Follow these steps to get the project running on your local machine.
 
