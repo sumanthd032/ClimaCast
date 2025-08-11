@@ -8,8 +8,51 @@ document.addEventListener('DOMContentLoaded', () => {
     let map;
     let tempChart;
 
-    // Function to fetch weather data from the backend
-    const fetchWeather = async (city) => {
+    // --- NEW: Geolocation on page load ---
+    const getLocalWeather = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    fetchWeatherByCoords(latitude, longitude);
+                },
+                (error) => {
+                    // Handle user denying permission or other errors
+                    console.warn(`Geolocation error: ${error.message}`);
+                    // Optionally, show a message asking the user to search for a city manually
+                    showError("Could not get your location. Please search for a city manually.");
+                }
+            );
+        } else {
+            console.warn("Geolocation is not supported by this browser.");
+            showError("Geolocation is not supported. Please search for a city.");
+        }
+    };
+
+    // --- NEW: Fetch weather by coordinates ---
+    const fetchWeatherByCoords = async (lat, lon) => {
+        showLoader();
+        hideError();
+        weatherDashboard.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/weather?lat=${lat}&lon=${lon}`);
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'An error occurred');
+            }
+            updateUI(data);
+            weatherDashboard.classList.remove('hidden');
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            hideLoader();
+        }
+    };
+
+
+    // --- MODIFIED: Renamed to be specific for city search ---
+    const fetchWeatherByCity = async (city) => {
         showLoader();
         hideError();
         weatherDashboard.classList.add('hidden');
@@ -33,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchBtn.addEventListener('click', () => {
         const city = cityInput.value.trim();
         if (city) {
-            fetchWeather(city);
+            fetchWeatherByCity(city);
         } else {
             showError('Please enter a city name.');
         }
@@ -71,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const forecastCardsContainer = document.getElementById('forecast-cards');
         forecastCardsContainer.innerHTML = '';
         
-        // Filter for one forecast per day (e.g., at noon)
         const dailyForecasts = forecast.list.filter(item => item.dt_txt.includes("12:00:00"));
 
         dailyForecasts.forEach(day => {
@@ -101,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
             map.setView([lat, lon], 10);
         }
         
-        // Clear existing markers
         map.eachLayer((layer) => {
             if (layer instanceof L.Marker) {
                 map.removeLayer(layer);
@@ -161,4 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage.textContent = '';
         errorMessage.classList.add('hidden');
     };
+
+    getLocalWeather();
 });
