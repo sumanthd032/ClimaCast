@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClimaCast - Weather Dashboard</title>
+    <link rel="stylesheet" href="[https://unpkg.com/leaflet@1.7.1/dist/leaflet.css](https://unpkg.com/leaflet@1.7.1/dist/leaflet.css)" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+    <link href="[https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap](https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap)" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ClimaCast</h1>
+            <div class="search-container">
+                <input type="text" id="city-input" placeholder="Enter city name...">
+                <button id="search-btn">Search</button>
+            </div>
+        </header>
+
+        <main id="weather-dashboard" class="hidden">
+            <div class="main-info">
+                <div class="current-weather">
+                    <h2 id="city-name"></h2>
+                    <div class="temp-container">
+                        <img id="weather-icon" src="" alt="Weather Icon">
+                        <p id="temperature"></p>
+                    </div>
+                    <p id="weather-description"></p>
+                </div>
+                <div class="details">
+                    <h3>Weather Details</h3>
+                    <p><strong>Feels Like:</strong> <span id="feels-like"></span></p>
+                    <p><strong>Humidity:</strong> <span id="humidity"></span></p>
+                    <p><strong>Wind Speed:</strong> <span id="wind-speed"></span></p>
+                    <p><strong>Pressure:</strong> <span id="pressure"></span></p>
+                </div>
+            </div>
+
+            <div class="forecast-container">
+                <h3>5-Day Forecast</h3>
+                <div class="forecast" id="forecast-cards">
+                    <!-- Forecast cards will be injected here by JavaScript -->
+                </div>
+            </div>
+
+            <div class="charts-maps-container">
+                 <div class="chart-container">
+                    <h3>Temperature Trend</h3>
+                    <canvas id="temp-chart"></canvas>
+                </div>
+                <div id="map-container">
+                     <h3>Location</h3>
+                    <div id="map"></div>
+                </div>
+            </div>
+        </main>
+        <div id="loader" class="hidden"></div>
+        <div id="error-message" class="hidden"></div>
+    </div>
+
+    <script src="[https://unpkg.com/leaflet@1.7.1/dist/leaflet.js](https://unpkg.com/leaflet@1.7.1/dist/leaflet.js)"></script>
+    <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
