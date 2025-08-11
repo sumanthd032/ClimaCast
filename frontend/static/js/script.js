@@ -16,11 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await fetch(`/weather?city=${encodeURIComponent(city)}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'City not found');
-            }
             const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'An error occurred');
+            }
             updateUI(data);
             weatherDashboard.classList.remove('hidden');
         } catch (error) {
@@ -60,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('city-name').textContent = `${current.name}, ${current.sys.country}`;
         document.getElementById('temperature').textContent = `${Math.round(current.main.temp)}°C`;
         document.getElementById('weather-description').textContent = current.weather[0].description;
-        document.getElementById('weather-icon').src = `http://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png`;
+        document.getElementById('weather-icon').src = `https://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png`;
         document.getElementById('feels-like').textContent = `${Math.round(current.main.feels_like)}°C`;
         document.getElementById('humidity').textContent = `${current.main.humidity}%`;
         document.getElementById('wind-speed').textContent = `${current.wind.speed} m/s`;
@@ -77,15 +76,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         dailyForecasts.forEach(day => {
             const card = document.createElement('div');
-            card.className = 'forecast-card';
+            card.className = 'forecast-card bg-gray-50 p-4 rounded-xl text-center shadow-md';
             
             const date = new Date(day.dt * 1000);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
 
             card.innerHTML = `
-                <p class="day">${dayName}</p>
-                <img src="[http://openweathermap.org/img/wn/$](http://openweathermap.org/img/wn/$){day.weather[0].icon}.png" alt="Weather icon">
-                <p class="temp">${Math.round(day.main.temp)}°C</p>
+                <p class="font-bold">${dayName}</p>
+                <img src="https://openweathermap.org/img/wn/${day.weather[0].icon}.png" alt="Weather icon" class="mx-auto">
+                <p class="text-lg">${Math.round(day.main.temp)}°C</p>
             `;
             forecastCardsContainer.appendChild(card);
         });
@@ -96,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!map) {
             map = L.map('map').setView([lat, lon], 10);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="[https://www.openstreetmap.org/copyright](https://www.openstreetmap.org/copyright)">OpenStreetMap</a> contributors'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
         } else {
             map.setView([lat, lon], 10);
@@ -124,8 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets: [{
                 label: 'Temperature (°C)',
                 data: tempData,
-                borderColor: '#1e88e5',
-                backgroundColor: 'rgba(30, 136, 229, 0.1)',
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true,
                 tension: 0.4
             }]
