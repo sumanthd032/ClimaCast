@@ -21,28 +21,34 @@ def index():
 @app.route('/weather', methods=['GET'])
 def get_weather():
     """
-    Fetches current weather and 5-day forecast data for a given city.
-    The city is passed as a query parameter.
+    Fetches weather data. Can handle requests by city name
+    or by latitude and longitude.
     """
     city = request.args.get('city')
-    if not city:
-        return jsonify({"error": "City not provided"}), 400
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
 
-    # Check if the API key is present
     if not API_KEY:
         return jsonify({"error": "Weather API key not configured on the server."}), 500
 
-    # Parameters for the API request
     params = {
-        'q': city,
         'appid': API_KEY,
         'units': 'metric'
     }
 
+    # Determine if the request is by city or by coordinates
+    if lat and lon:
+        params['lat'] = lat
+        params['lon'] = lon
+    elif city:
+        params['q'] = city
+    else:
+        return jsonify({"error": "City or coordinates not provided"}), 400
+
+
     try:
         # Fetch current weather data
         response = requests.get(BASE_URL, params=params)
-        # This will raise an exception for HTTP error codes (4xx or 5xx)
         response.raise_for_status()
         current_weather = response.json()
 
@@ -60,20 +66,17 @@ def get_weather():
         return jsonify(weather_data)
 
     except requests.exceptions.HTTPError as err:
-        # This block now handles specific HTTP errors from the API
         if err.response.status_code == 401:
             return jsonify({"error": "Invalid API Key. Please check your .env file."}), 401
         elif err.response.status_code == 404:
-            return jsonify({"error": f"Weather data not found for '{city}'. Please check the spelling."}), 404
+            return jsonify({"error": "Weather data not found for the specified location."}), 404
         else:
             return jsonify({"error": f"An HTTP error occurred: {err}"}), err.response.status_code
 
     except requests.exceptions.RequestException as err:
-        # This handles network-related errors (e.g., DNS failure, connection refused)
         return jsonify({"error": f"Could not connect to weather service: {err}"}), 503
 
     except Exception as e:
-        # A catch-all for any other unexpected errors
         return jsonify({"error": f"An unexpected server error occurred: {e}"}), 500
 
 
