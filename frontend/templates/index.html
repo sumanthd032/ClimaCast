@@ -1,18 +1,28 @@
 <!DOCTYPE html>
-<!-- The 'dark' class will be toggled on this element -->
 <html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClimaCast - Weather Dashboard</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS for map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .hidden { display: none; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            /* Enhanced background gradient */
+            background-color: #f0f4f8;
+            background-image: linear-gradient(to bottom right, #f0f4f8, #d9e2ec);
+        }
+        .dark body {
+            background-color: #0f172a;
+            background-image: linear-gradient(to bottom right, #0f172a, #1e293b);
+        }
         /* Simple fade-in animation for cards */
         .card-fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -21,8 +31,9 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* Custom loader animation */
         #loader {
-            border: 5px solid #e5e7eb; /* dark:border-gray-600 */
+            border: 5px solid rgba(156, 163, 175, 0.2);
             border-top: 5px solid #3b82f6;
             border-radius: 50%;
             width: 50px;
@@ -34,93 +45,115 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Glassmorphism effect for cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.5);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Map tile filter for dark mode */
+        .dark .leaflet-tile-pane {
+            filter: brightness(0.6) invert(1) contrast(0.8) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+        }
     </style>
     <script>
-        // NEW: Tailwind Dark Mode Configuration
+        // Tailwind Dark Mode Configuration
         tailwind.config = {
           darkMode: 'class',
         }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
-    <div class="container w-full max-w-7xl mx-auto p-5">
-        <header class="flex flex-wrap justify-between items-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-500">ClimaCast</h1>
-            <div class="flex items-center gap-4 mt-4 md:mt-0">
-                <div class="search-container flex gap-2">
-                    <input type="text" id="city-input" placeholder="Enter city name..." class="py-3 px-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full text-base w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    <button id="search-btn" class="py-3 px-6 border-none bg-blue-500 text-white rounded-full text-base cursor-pointer hover:bg-blue-600 transition">Search</button>
+<body class="transition-colors duration-300">
+    <!-- Main container with responsive padding -->
+    <div class="container w-full max-w-7xl mx-auto p-4 sm:p-5">
+        <!-- Header with responsive layout -->
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-3xl sm:text-4xl font-bold text-blue-500">ClimaCast</h1>
+            <div class="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                <!-- Search container that grows on mobile -->
+                <div class="search-container flex-grow flex gap-2">
+                    <input type="text" id="city-input" placeholder="Enter city name..." class="py-3 px-4 bg-white/50 dark:bg-slate-800/50 border border-gray-300 dark:border-gray-600 rounded-full text-base w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <button id="search-btn" class="py-3 px-6 border-none bg-blue-500 text-white rounded-full text-base cursor-pointer hover:bg-blue-600 transition-transform hover:scale-105">Search</button>
                 </div>
-                <!-- NEW: Dark Mode Toggle -->
-                <button id="theme-toggle" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <svg id="theme-toggle-dark-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                    <svg id="theme-toggle-light-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="p-3 rounded-full bg-white/50 dark:bg-slate-800/50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0 transition-transform hover:scale-105">
+                    <svg id="theme-toggle-dark-icon" class="w-5 h-5 hidden text-slate-800 dark:text-slate-200" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="w-5 h-5 hidden text-slate-800 dark:text-slate-200" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
                 </button>
             </div>
         </header>
 
         <main id="weather-dashboard" class="hidden">
-            <div class="grid lg:grid-cols-3 gap-6 mb-6">
-                <div class="current-weather lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg card-fade-in">
-                    <h2 id="city-name" class="text-3xl font-bold text-gray-700 dark:text-gray-200"></h2>
-                    <div class="flex items-center gap-4">
-                        <img id="weather-icon" src="" alt="Weather Icon" class="w-24 h-24">
-                        <p id="temperature" class="text-8xl font-bold"></p>
+            <!-- Grid layout for main content -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main weather and details column -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    <!-- Current Weather -->
+                    <div class="glass-card p-6 rounded-xl shadow-lg card-fade-in">
+                        <h2 id="city-name" class="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-200"></h2>
+                        <div class="flex items-center gap-2 sm:gap-4 mt-2">
+                            <img id="weather-icon" src="https://placehold.co/96x96/FFFFFF/CCCCCC?text=Icon" alt="Weather Icon" class="w-20 h-20 sm:w-24 sm:h-24">
+                            <p id="temperature" class="text-6xl sm:text-8xl font-bold text-slate-800 dark:text-slate-100"></p>
+                        </div>
+                        <p id="weather-description" class="text-xl sm:text-2xl capitalize mt-2 text-slate-600 dark:text-slate-300"></p>
                     </div>
-                    <p id="weather-description" class="text-2xl capitalize mt-2"></p>
+                    <!-- 5-Day Forecast -->
+                    <div class="glass-card p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.1s;">
+                        <h3 class="text-xl sm:text-2xl font-bold text-blue-500 mb-4">5-Day Forecast</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4" id="forecast-cards"></div>
+                    </div>
                 </div>
-                <!-- NEW: Atmosphere Card -->
-                <div class="atmosphere bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg card-fade-in">
-                    <h3 class="text-2xl font-bold text-blue-500 mb-4">Atmosphere</h3>
-                    <div class="space-y-3 text-lg">
-                        <p class="flex items-center justify-between">
-                            <span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>Sunrise</span>
-                            <span id="sunrise-time" class="font-semibold"></span>
-                        </p>
-                        <p class="flex items-center justify-between">
-                            <span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>Sunset</span>
-                            <span id="sunset-time" class="font-semibold"></span>
-                        </p>
-                        <p class="flex items-center justify-between">
-                            <span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>AQI</span>
-                            <span id="aqi" class="font-semibold px-2 py-1 rounded"></span>
-                        </p>
+                <!-- Side column for atmosphere and details -->
+                <div class="flex flex-col gap-6">
+                    <!-- Atmosphere -->
+                    <div class="glass-card p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.2s;">
+                         <h3 class="text-xl sm:text-2xl font-bold text-blue-500 mb-4">Atmosphere</h3>
+                        <div class="space-y-3 text-md sm:text-lg text-slate-700 dark:text-slate-300">
+                             <p class="flex items-center justify-between"><span>Sunrise</span><span id="sunrise-time" class="font-semibold"></span></p>
+                             <p class="flex items-center justify-between"><span>Sunset</span><span id="sunset-time" class="font-semibold"></span></p>
+                             <p class="flex items-center justify-between"><span>AQI</span><span id="aqi" class="font-semibold px-2 py-1 rounded text-sm"></span></p>
+                        </div>
+                    </div>
+                    <!-- Weather Details -->
+                    <div class="glass-card p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.3s;">
+                        <h3 class="text-xl sm:text-2xl font-bold text-blue-500 mb-4">Weather Details</h3>
+                        <div class="space-y-3 text-md sm:text-lg text-slate-700 dark:text-slate-300">
+                            <p class="flex justify-between"><span>Feels Like</span> <span id="feels-like" class="font-semibold"></span></p>
+                            <p class="flex justify-between"><span>Humidity</span> <span id="humidity" class="font-semibold"></span></p>
+                            <p class="flex justify-between"><span>Wind</span> <span id="wind-speed" class="font-semibold"></span></p>
+                            <p class="flex justify-between"><span>Pressure</span> <span id="pressure" class="font-semibold"></span></p>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="grid lg:grid-cols-3 gap-6 mb-6">
-                <div class="details bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.1s;">
-                    <h3 class="text-2xl font-bold text-blue-500 mb-4">Weather Details</h3>
-                    <div class="space-y-3 text-lg">
-                        <p class="flex justify-between"><strong>Feels Like:</strong> <span id="feels-like" class="font-semibold"></span></p>
-                        <p class="flex justify-between"><strong>Humidity:</strong> <span id="humidity" class="font-semibold"></span></p>
-                        <p class="flex justify-between"><strong>Wind Speed:</strong> <span id="wind-speed" class="font-semibold"></span></p>
-                        <p class="flex justify-between"><strong>Pressure:</strong> <span id="pressure" class="font-semibold"></span></p>
-                    </div>
-                </div>
-                <div class="map-container lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.2s;">
-                    <h3 class="text-2xl font-bold text-blue-500 mb-4">Location</h3>
+            <!-- Map and Chart row -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
+                <div class="lg:col-span-2 glass-card p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.4s;">
+                    <h3 class="text-xl sm:text-2xl font-bold text-blue-500 mb-4">Location</h3>
                     <div id="map" class="h-64 rounded-lg"></div>
                 </div>
-            </div>
-
-            <div class="forecast-container bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.3s;">
-                <h3 class="text-2xl font-bold text-blue-500 mb-4">5-Day Forecast</h3>
-                <div class="forecast grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4" id="forecast-cards"></div>
-            </div>
-
-            <div class="chart-container relative h-80 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mt-6 card-fade-in" style="animation-delay: 0.4s;">
-                <h3 class="text-2xl font-bold text-blue-500 mb-4">Temperature Trend (Next 24h)</h3>
-                <canvas id="temp-chart"></canvas>
+                <div class="lg:col-span-3 glass-card p-6 rounded-xl shadow-lg card-fade-in" style="animation-delay: 0.5s;">
+                    <h3 class="text-xl sm:text-2xl font-bold text-blue-500 mb-4">Temperature Trend (24h)</h3>
+                    <div class="relative h-64"><canvas id="temp-chart"></canvas></div>
+                </div>
             </div>
         </main>
+
+        <!-- Loader and Error Message -->
         <div id="loader" class="hidden"></div>
-        <div id="error-message" class="hidden text-red-500 text-center text-lg p-4 bg-red-100 dark:bg-red-900 dark:text-red-300 rounded-lg mt-5"></div>
+        <div id="error-message" class="hidden text-red-500 text-center text-lg p-4 bg-red-100/50 dark:bg-red-900/50 rounded-lg mt-5 glass-card"></div>
     </div>
 
+    <!-- Leaflet JS for map -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Link to your script file -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
